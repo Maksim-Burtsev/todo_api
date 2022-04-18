@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+plan.txt
 # C extensions
+venv
 *.so
 
 # Distribution / packaging
