@@ -4,6 +4,7 @@ from rest_framework import routers
 
 from todo.views import TodoViewSet, SubTaskDetailView, CreateSubTaskView
 
+
 router = routers.SimpleRouter()
 router.register('todo', TodoViewSet, basename='todo')
 

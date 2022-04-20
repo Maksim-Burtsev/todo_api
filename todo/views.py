@@ -9,6 +9,7 @@ from todo.serializers import (
     CreateSubTaskSerializer
 )
 from todo.permissions import IsOwner, IsTaskOwner
+from todo.services import _is_task_owner
 
 
 class TodoViewSet(viewsets.ModelViewSet):
@@ -33,10 +34,10 @@ class CreateSubTaskView(generics.CreateAPIView):
     permission_classes = [IsTaskOwner]
 
     def post(self, request, *args, **kwargs):
-        #TODO вынести валидацию
-        task_id = request.data['task']
-        task = Task.objects.get(id=task_id)
-        if task.user != request.user:
+        if not _is_task_owner(request):
             raise PermissionDenied(
                 {"detail": "You don't have permission to access"})
+
         return super().post(request, *args, **kwargs)
+
+            
