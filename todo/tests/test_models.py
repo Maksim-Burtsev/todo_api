@@ -1,4 +1,3 @@
-from ast import Sub
 from datetime import date
 
 from django.test import TestCase

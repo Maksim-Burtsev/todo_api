@@ -15,7 +15,7 @@ class Task(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     user = models.ForeignKey(User,
-                             on_delete=models.CASCADE, related_name='tasks')
+                             on_delete=models.CASCADE, related_name='tasks', null=True)
     is_done = models.BooleanField(default=False)
     priority = models.PositiveSmallIntegerField(blank=True,
                                 null=True, choices=PRIORITY_CHOICE)
