@@ -1,5 +1,4 @@
-from django.utils import timezone
-
+from rest_framework import status
 from rest_framework import viewsets, generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -22,8 +21,7 @@ from todo.permissions import IsOwner, IsTaskOwner
 from todo.services import _is_task_owner, send_code_on_email, _generate_code
 
 
-# TODO обработать случай, когда данные из сериалайзера не валидные
-# TODO добавить status-коды
+# TODO кастомизировать сообщение в письме
 
 class CreateNewPasswordView(APIView):
     def post(self, request):
@@ -32,8 +30,9 @@ class CreateNewPasswordView(APIView):
             user_id = serializer.data['user_id']
             code = serializer.data['code']
             new_password = serializer.data['new_password']
-
-            if not ResetPasswordCode.objects.filter(code=code, user_id=user_id).exists():
+            
+            reset_code = ResetPasswordCode.objects.filter(code=code, user_id=user_id)
+            if not reset_code.exists():
                 return Response({'detail': 'Bad request'})
 
             user = User.objects.get(id=user_id)
@@ -44,7 +43,10 @@ class CreateNewPasswordView(APIView):
             if user_token.exists():
                 user_token[0].delete()
 
-            return Response({'detail': 'Password created!'})
+            reset_code[0].delete()
+
+            return Response({'detail': 'Password created!'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GetCodeView(APIView):
@@ -52,22 +54,13 @@ class GetCodeView(APIView):
         serializer = CodeSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.data['email']
-            code = serializer.data['code']
+            user_id = User.objects.get(email=email).id
 
-            user = User.objects.get(email=email)
-            reset_password_code = ResetPasswordCode.objects.filter(
-                code=code, user_id=user.id)
-
-            if not reset_password_code.exists():
-                return Response({'detail': 'Bad request'})
-            reset_code = reset_password_code[0]
-
-            if reset_code.lasts_until < timezone.now():
-                return Response({'detail': 'Code was overdue'})
             return Response({
                 'Correct': 'True',
-                'user_id': user.id
-            })
+                'user_id': user_id
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class EmailView(APIView):
@@ -75,7 +68,6 @@ class EmailView(APIView):
         serializer = EmailSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.data['email']
-            # TODO кастомизировать сообщение в письме
             code = _generate_code()
             send_code_on_email(code, email)
             user = User.objects.get(email=email)
@@ -86,15 +78,15 @@ class EmailView(APIView):
             reset_code.save()
             return Response({
                 'detail': 'Code on your email!'
-            })
-        return Response({'detail': 'Bad request'})
+            }, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RegisterUserView(APIView):
     def post(self, request):
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()  # TODO вот это лишнее скорее всего
+            # serializer.save()  # TODO вот это лишнее скорее всего
             user, _ = User.objects.get_or_create(
                 username=serializer.data['username'])
             # TODO если пользователь уже есть, то сразу возвращать ответ
@@ -102,9 +94,9 @@ class RegisterUserView(APIView):
             return Response({
                 'user': f'{user.username}',
                 'token': f'{token}',
-            })
+            }, status=status.HTTP_201_CREATED)
 
-        return Response({'detail': 'Bad request'})
+        return Response({'detail': 'Bad request'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdatePasswordView(APIView):
@@ -115,13 +107,12 @@ class UpdatePasswordView(APIView):
                 auth_token=serializer.validated_data['token'])
             user.set_password(serializer.validated_data['new_password'])
             user.save()
-        # TODO обработать все ошибки
             return Response({
                 'detail': 'Password was changed!'
             })
         return Response({
             'detail': 'Invalid data!'
-        })
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TodoViewSet(viewsets.ModelViewSet):

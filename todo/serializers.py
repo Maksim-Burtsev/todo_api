@@ -1,9 +1,11 @@
+from django.utils import timezone
+
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
+from todo.models import Task, SubTask, User, ResetPasswordCode
 
-from todo.models import Task, SubTask, User
-
+#TODO validate_code вынести
 
 class CreateNewPasswordSerializer(serializers.Serializer):
     user_id = serializers.IntegerField()
@@ -14,12 +16,22 @@ class CreateNewPasswordSerializer(serializers.Serializer):
     class Meta:
         fields = ('user_id', 'code', 'new_password', 'confirm_password')
 
+    def validate_code(self, value):
+        if len(value) != 5:
+            raise serializers.ValidationError('Wrong code')
+        return value
+
     def validate(self, data):
+        user_id = data.get('user_id')
+        code = data.get('code')
         new_password = data.get('new_password')
         confirm_password = data.get('confirm_password')
 
         if new_password != confirm_password:
             raise serializers.ValidationError("Passwords don't match")
+
+        if not ResetPasswordCode.objects.filter(code=code, user_id=user_id).exists():
+            raise serializers.ValidationError("Uncorrect data")
 
         return super().validate(data)
 
@@ -36,6 +48,26 @@ class CodeSerializer(serializers.Serializer):
             raise serializers.ValidationError('Wrong code')
         return value
 
+    def validate(self, data):
+        email = data['email']
+        code = data['code']
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Wrong email")
+
+        reset_password_code = ResetPasswordCode.objects.filter(
+            code=code, user_id=user.id)
+
+        if not reset_password_code.exists():
+            raise serializers.ValidationError("Wrong code")
+
+        reset_code = reset_password_code[0]
+        if reset_code.lasts_until < timezone.now():
+            raise serializers.ValidationError("Code is overdue")
+
+        return super().validate(data)
+
 
 class EmailSerializer(serializers.Serializer):
     """
@@ -47,7 +79,8 @@ class EmailSerializer(serializers.Serializer):
         fields = ('email',)
 
     def validate_email(self, value):
-        # TODO есть ли email в базе данных
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email doesn't exists")
         return value
 
 
@@ -60,7 +93,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=55)
 
     def validate_email(self, value):
-        # TODO если email exists -> raise Exception
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email exists")
         return value
 
     class Meta:
