@@ -1,4 +1,3 @@
-from django import db
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
@@ -6,21 +5,73 @@ from rest_framework.authtoken.models import Token
 from todo.models import Task, SubTask, User
 
 
+class CreateNewPasswordSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()
+    code = serializers.CharField()
+    new_password = serializers.CharField()
+    confirm_password = serializers.CharField()
+
+    class Meta:
+        fields = ('user_id', 'code', 'new_password', 'confirm_password')
+
+    def validate(self, data):
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+
+        if new_password != confirm_password:
+            raise serializers.ValidationError("Passwords don't match")
+
+        return super().validate(data)
+
+
+class CodeSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField()
+
+    class Meta:
+        fields = ('email', 'code',)
+
+    def validate_code(self, value):
+        if len(value) != 5:
+            raise serializers.ValidationError('Wrong code')
+        return value
+
+
+class EmailSerializer(serializers.Serializer):
+    """
+    Email для восстановления пароля
+    """
+    email = serializers.EmailField()
+
+    class Meta:
+        fields = ('email',)
+
+    def validate_email(self, value):
+        # TODO есть ли email в базе данных
+        return value
+
+
 class UserRegisterSerializer(serializers.ModelSerializer):
+    """
+    Регистрация пользователя
+    """
     username = serializers.CharField(max_length=255)
     email = serializers.EmailField()
     password = serializers.CharField(max_length=55)
 
     def validate_email(self, value):
-        print(value)
+        # TODO если email exists -> raise Exception
         return value
 
     class Meta:
         model = User
-        fields = ('username','email', 'password')
-    
+        fields = ('username', 'email', 'password')
+
 
 class PasswordsSerializer(serializers.Serializer):
+    """
+    Обновление пароля
+    """
     token = serializers.CharField()
     old_password = serializers.CharField()
     new_password = serializers.CharField()
@@ -45,7 +96,7 @@ class PasswordsSerializer(serializers.Serializer):
             raise serializers.ValidationError('New password equal old!')
 
         if new_password != comfirm_password:
-            raise serializers.ValidationError('Пароли не совпадают')
+            raise serializers.ValidationError("Passwords don't match")
 
         return super().validate(data)
 

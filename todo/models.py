@@ -1,8 +1,39 @@
+import datetime
 from datetime import date
 
 from django.db import models
+from django.utils import timezone
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+
+
+def validate_code(value: str):
+    if len(value) != 5:
+        raise ValidationError('Length of code must be five')
+    if not value.isdigit():
+        raise ValidationError('Code must be digit')
+
+    return value
+
+
+class ResetPasswordCode(models.Model):
+    """
+    Код подтверждения для восстановления пароля
+    """
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name='code')
+
+    code = models.CharField(max_length=10, validators=[validate_code, ])
+
+    date_created = models.DateTimeField(blank=True, null=True)
+
+    lasts_until = models.DateTimeField(blank=True, null=True)
+
+    def save(self, *args, **kwargs) -> None:
+        self.date_created = timezone.now()
+        self.lasts_until = self.date_created + \
+            datetime.timedelta(seconds=(60*5))
+        return super().save(*args, **kwargs)
 
 
 def validate_date(task_date):

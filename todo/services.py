@@ -1,3 +1,10 @@
+import random
+import os
+from email.mime.text import MIMEText
+
+import smtplib
+from dotenv import load_dotenv
+
 from todo.models import Task
 
 
@@ -9,3 +16,38 @@ def _is_task_owner(request):
         if task.user != request.user:
             return False
     return True
+
+
+
+def _generate_code() -> int:
+    """
+    Генерирует 5-ти значный код для восстановления пароля
+    """
+    code = ''
+    for _ in range(5):
+        code += str(random.randint(0, 9))
+
+    return int(code)
+
+
+def send_code_on_email(code:int, user_email:str) -> None:
+    """
+    Отправляет код подтверждения на почту
+    """
+
+    load_dotenv()
+    sender = 'lofistudi3@gmail.com'
+    password = os.getenv('PASSWORD')
+
+    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server.starttls()
+    server.login(sender, password)
+
+    message = MIMEText(f'{code}')
+    message['Subject'] = 'Reset password'
+
+    server.sendmail(sender, user_email, message.as_string())
+
+
+if __name__ == '__main__':
+    pass

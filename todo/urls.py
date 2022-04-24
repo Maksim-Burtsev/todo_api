@@ -8,7 +8,10 @@ from todo.views import (
     SubTaskDetailView,
     CreateSubTaskView,
     RegisterUserView,
-    UpdatePasswordView
+    UpdatePasswordView,
+    EmailView,
+    GetCodeView,
+    CreateNewPasswordView
 )
 
 
@@ -19,6 +22,9 @@ urlpatterns = [
     path('api-token-auth/', views.obtain_auth_token),
     path('register/', RegisterUserView.as_view()),
     path('update_password/', UpdatePasswordView.as_view()),
+    path('send_codе/', EmailView.as_view()),
+    path('check_code/', GetCodeView.as_view()),
+    path('create_password/', CreateNewPasswordView.as_view()),
 
     path('', include(router.urls)),
 
