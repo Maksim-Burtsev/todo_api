@@ -1,3 +1,4 @@
+from venv import create
 from rest_framework import status
 from rest_framework import viewsets, generics
 from rest_framework.views import APIView
@@ -21,8 +22,6 @@ from todo.permissions import IsOwner, IsTaskOwner
 from todo.services import _is_task_owner, send_code_on_email, _generate_code
 
 
-# TODO кастомизировать сообщение в письме
-
 class CreateNewPasswordView(APIView):
     def post(self, request):
         serializer = CreateNewPasswordSerializer(data=request.data)
@@ -30,10 +29,6 @@ class CreateNewPasswordView(APIView):
             user_id = serializer.data['user_id']
             code = serializer.data['code']
             new_password = serializer.data['new_password']
-            
-            reset_code = ResetPasswordCode.objects.filter(code=code, user_id=user_id)
-            if not reset_code.exists():
-                return Response({'detail': 'Bad request'})
 
             user = User.objects.get(id=user_id)
             user.set_password(new_password)
@@ -43,7 +38,7 @@ class CreateNewPasswordView(APIView):
             if user_token.exists():
                 user_token[0].delete()
 
-            reset_code[0].delete()
+            ResetPasswordCode.objects.get(code=code, user_id=user_id).delete()
 
             return Response({'detail': 'Password created!'}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -81,15 +76,22 @@ class EmailView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+#TODO обработать нормально ошибки при невалидных данных
 class RegisterUserView(APIView):
     def post(self, request):
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
-            # serializer.save()  # TODO вот это лишнее скорее всего
-            user, _ = User.objects.get_or_create(
-                username=serializer.data['username'])
-            # TODO если пользователь уже есть, то сразу возвращать ответ
+            email = serializer.data['email']
+            username = serializer.data['username']
+            password = serializer.data['password']
+
+            user, created = User.objects.get_or_create(
+                username=username,
+                email=email,
+                password=password
+            )
+            if not created:
+                return Response({'detail': 'User already exists'}, status=status.HTTP_200_OK)
             token, _ = Token.objects.get_or_create(user=user)
             return Response({
                 'user': f'{user.username}',
@@ -110,9 +112,9 @@ class UpdatePasswordView(APIView):
             return Response({
                 'detail': 'Password was changed!'
             })
-        return Response({
-            'detail': 'Invalid data!'
-        }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({'detail': 'Invalid data!'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class TodoViewSet(viewsets.ModelViewSet):

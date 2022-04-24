@@ -18,19 +18,18 @@ def _is_task_owner(request):
     return True
 
 
-
 def _generate_code() -> int:
     """
     Генерирует 5-ти значный код для восстановления пароля
     """
-    code = ''
-    for _ in range(5):
+    code = f'{random.randint(1, 9)}'
+    for _ in range(4):
         code += str(random.randint(0, 9))
 
     return int(code)
 
 
-def send_code_on_email(code:int, user_email:str) -> None:
+def send_code_on_email(code: int, user_email: str) -> None:
     """
     Отправляет код подтверждения на почту
     """

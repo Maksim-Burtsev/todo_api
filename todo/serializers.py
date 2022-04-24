@@ -4,10 +4,12 @@ from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
 from todo.models import Task, SubTask, User, ResetPasswordCode
+from todo.mixins import CodeMixin
 
-#TODO validate_code вынести
+# TODO validate_code вынести
 
-class CreateNewPasswordSerializer(serializers.Serializer):
+
+class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
     user_id = serializers.IntegerField()
     code = serializers.CharField()
     new_password = serializers.CharField()
@@ -15,11 +17,6 @@ class CreateNewPasswordSerializer(serializers.Serializer):
 
     class Meta:
         fields = ('user_id', 'code', 'new_password', 'confirm_password')
-
-    def validate_code(self, value):
-        if len(value) != 5:
-            raise serializers.ValidationError('Wrong code')
-        return value
 
     def validate(self, data):
         user_id = data.get('user_id')
@@ -36,17 +33,12 @@ class CreateNewPasswordSerializer(serializers.Serializer):
         return super().validate(data)
 
 
-class CodeSerializer(serializers.Serializer):
+class CodeSerializer(serializers.Serializer, CodeMixin):
     email = serializers.EmailField()
     code = serializers.CharField()
 
     class Meta:
         fields = ('email', 'code',)
-
-    def validate_code(self, value):
-        if len(value) != 5:
-            raise serializers.ValidationError('Wrong code')
-        return value
 
     def validate(self, data):
         email = data['email']
@@ -94,7 +86,8 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Email exists")
+            raise serializers.ValidationError(
+                "User with this email already exists")
         return value
 
     class Meta:
