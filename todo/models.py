@@ -60,9 +60,14 @@ class Task(models.Model):
                                                 null=True, choices=PRIORITY_CHOICE)
     date = models.DateField(validators=[validate_date])
     overdue = models.BooleanField(blank=True, null=True, default=False)
+    week_number = models.PositiveIntegerField(blank=True, null=True)
 
     def __str__(self) -> str:
         return self.name
+    
+    def save(self, *args, **kwargs):
+        self.week_number = self.date.isocalendar().week
+        return super().save(*args, **kwargs)
 
 
 class SubTask(models.Model):

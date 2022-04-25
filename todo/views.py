@@ -5,6 +5,9 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
+from rest_framework.filters import SearchFilter
+
+from django_filters.rest_framework.backends import DjangoFilterBackend
 
 from todo.models import Task, SubTask, User, ResetPasswordCode
 from todo.serializers import (
@@ -19,6 +22,39 @@ from todo.serializers import (
 )
 from todo.permissions import IsOwner, IsTaskOwner
 from todo.services import _is_task_owner, send_code_on_email, _generate_code
+
+
+class TodoViewSet(viewsets.ModelViewSet):
+    serializer_class = TaskSerializer
+    permission_classes = [IsAuthenticated & IsOwner]
+
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filter_fields = ['is_done', 'priority', 'date', 'overdue', 'week_number']
+    search_fields = ['name', 'description',
+                     'subtasks__name', 'subtasks__description']
+
+    def get_queryset(self):
+        return Task.objects.filter(user_id=self.request.user).prefetch_related('subtasks')
+
+
+class SubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = SubTask.objects.all()
+    serializer_class = SubTaskSerializer
+    permission_classes = [IsTaskOwner]
+
+
+class CreateSubTaskView(generics.CreateAPIView):
+
+    serializer_class = CreateSubTaskSerializer
+    queryset = SubTask.objects.all()
+    permission_classes = [IsTaskOwner]
+
+    def post(self, request, *args, **kwargs):
+        if not _is_task_owner(request):
+            raise PermissionDenied(
+                {"detail": "You don't have permission to access"})
+
+        return super().post(request, *args, **kwargs)
 
 
 class CreateNewPasswordView(APIView):
@@ -90,7 +126,6 @@ class RegisterUserView(APIView):
                 password=password
             )
             token = Token.objects.create(user=user)
-            
             return Response({
                 'user': f'{user.username}',
                 'token': f'{token}',
@@ -113,31 +148,3 @@ class UpdatePasswordView(APIView):
 
         return Response({'detail': 'Invalid data!'},
                         status=status.HTTP_400_BAD_REQUEST)
-
-
-class TodoViewSet(viewsets.ModelViewSet):
-    serializer_class = TaskSerializer
-    permission_classes = [IsAuthenticated & IsOwner]
-
-    def get_queryset(self):
-        return Task.objects.filter(user_id=self.request.user)
-
-
-class SubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = SubTask.objects.all()
-    serializer_class = SubTaskSerializer
-    permission_classes = [IsTaskOwner]
-
-
-class CreateSubTaskView(generics.CreateAPIView):
-
-    serializer_class = CreateSubTaskSerializer
-    queryset = SubTask.objects.all()
-    permission_classes = [IsTaskOwner]
-
-    def post(self, request, *args, **kwargs):
-        if not _is_task_owner(request):
-            raise PermissionDenied(
-                {"detail": "You don't have permission to access"})
-
-        return super().post(request, *args, **kwargs)

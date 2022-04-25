@@ -7,8 +7,6 @@ from rest_framework.authtoken.models import Token
 from todo.models import Task, SubTask, User, ResetPasswordCode
 from todo.mixins import CodeMixin
 
-# TODO validate_code вынести
-
 
 class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
     user_id = serializers.IntegerField()
@@ -153,8 +151,9 @@ class TaskSerializer(serializers.ModelSerializer):
     user = serializers.HiddenField(
         default=serializers.CurrentUserDefault(),
     )
+    week_number = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Task
         fields = ('id', 'name', 'description', 'is_done',
-                  'priority', 'date', 'overdue', 'user', 'subtasks')
+                  'priority', 'date', 'overdue', 'user', 'week_number', 'subtasks')

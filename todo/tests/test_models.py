@@ -1,11 +1,17 @@
+import datetime
 from datetime import date
 
 from django.test import TestCase
 
-from todo.models import Task, SubTask, User
+from todo.models import (
+    Task,
+    SubTask,
+    User,
+    ResetPasswordCode
+)
 
 
-class TodoModelsTest(TestCase):
+class TodoTasksTest(TestCase):
 
     def setUp(self) -> None:
         user = User.objects.create(
@@ -78,3 +84,27 @@ class TodoModelsTest(TestCase):
         self.assertEqual(task_2.subtasks.all().count(), 0)
 
 
+class ResetPasswordCodeTestCase(TestCase):
+
+    def setUp(self) -> None:
+        self.user = User.objects.create(
+            username='Test_User123',
+            email='test@gmail.com',
+            password='21FEjdqwpowqu312wqa'
+        )
+        return super().setUp()
+
+    def test_reset_pass_code(self):
+        reset_code = ResetPasswordCode.objects.create(
+            user_id=self.user.id,
+            code='12345'
+        )
+        alive_time = reset_code.lasts_until-reset_code.date_created
+
+        self.assertEqual(ResetPasswordCode.objects.all().count(), 1)
+
+        self.assertEqual(reset_code.user.id, self.user.id)
+        
+        self.assertEqual(reset_code.code, '12345')
+
+        self.assertEqual(alive_time, datetime.timedelta(seconds=300))
