@@ -4,10 +4,10 @@ run:
 test:
 	python manage.py test
 
-makemigrations:
-	python manage.py makemigrations
-	
 migrate:
-	python manage.py migrate
+	python manage.py makemigrations && python manage.py migrate 
+	
+shell:
+	python manage.py shell
 
  

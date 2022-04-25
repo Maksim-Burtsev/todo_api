@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.db.models import Q
 
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
@@ -88,6 +89,12 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError(
                 "User with this email already exists")
+        return value
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError(
+                "User with this username already exists")
         return value
 
     class Meta:

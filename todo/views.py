@@ -1,4 +1,3 @@
-from venv import create
 from rest_framework import status
 from rest_framework import viewsets, generics
 from rest_framework.views import APIView
@@ -76,7 +75,7 @@ class EmailView(APIView):
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-#TODO обработать нормально ошибки при невалидных данных
+
 class RegisterUserView(APIView):
     def post(self, request):
         serializer = UserRegisterSerializer(data=request.data)
@@ -85,20 +84,19 @@ class RegisterUserView(APIView):
             username = serializer.data['username']
             password = serializer.data['password']
 
-            user, created = User.objects.get_or_create(
+            user = User.objects.create(
                 username=username,
                 email=email,
                 password=password
             )
-            if not created:
-                return Response({'detail': 'User already exists'}, status=status.HTTP_200_OK)
-            token, _ = Token.objects.get_or_create(user=user)
+            token = Token.objects.create(user=user)
+            
             return Response({
                 'user': f'{user.username}',
                 'token': f'{token}',
             }, status=status.HTTP_201_CREATED)
 
-        return Response({'detail': 'Bad request'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UpdatePasswordView(APIView):

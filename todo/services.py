@@ -35,7 +35,7 @@ def send_code_on_email(code: int, user_email: str) -> None:
     """
 
     load_dotenv()
-    sender = 'lofistudi3@gmail.com'
+    sender = os.getenv('EMAIL')
     password = os.getenv('PASSWORD')
 
     server = smtplib.SMTP('smtp.gmail.com', 587)
