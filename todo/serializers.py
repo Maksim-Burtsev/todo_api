@@ -8,6 +8,14 @@ from todo.models import Task, SubTask, User, ResetPasswordCode
 from todo.mixins import CodeMixin
 
 
+class DoneTasksSerializer(serializers.ModelSerializer):
+    all_tasks = serializers.IntegerField()
+    done = serializers.IntegerField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'all_tasks', 'done')
+
 class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
     user_id = serializers.IntegerField()
     code = serializers.CharField()

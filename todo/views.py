@@ -1,3 +1,6 @@
+from urllib import request
+from django.db.models import Count, Q, F
+
 from rest_framework import status
 from rest_framework import viewsets, generics
 from rest_framework.views import APIView
@@ -18,10 +21,29 @@ from todo.serializers import (
     PasswordsSerializer,
     EmailSerializer,
     CodeSerializer,
-    CreateNewPasswordSerializer
+    CreateNewPasswordSerializer,
+    DoneTasksSerializer
 )
 from todo.permissions import IsOwner, IsTaskOwner
 from todo.services import _is_task_owner, send_code_on_email, _generate_code
+
+
+class DoneTasksView(generics.ListAPIView):
+    serializer_class = DoneTasksSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        done_tasks = Count('tasks', filter=Q(tasks__is_done=True))
+        done_subtasks = Count('tasks', filter=Q(tasks__subtasks__is_done=True))
+
+        return User.objects.filter(username=self.request.user) \
+            .prefetch_related('tasks__subtasks') \
+            .annotate(
+            done_subtasks=done_subtasks,
+            done_tasks=done_tasks,
+            done=F('done_subtasks')+F('done_tasks'),
+            all_tasks=Count('tasks')+Count('tasks__subtasks')
+        )
 
 
 class TodoViewSet(viewsets.ModelViewSet):

@@ -60,7 +60,7 @@ class Task(models.Model):
                                                 null=True, choices=PRIORITY_CHOICE)
     date = models.DateField(validators=[validate_date])
     overdue = models.BooleanField(blank=True, null=True, default=False)
-    week_number = models.PositiveIntegerField(blank=True, null=True)
+    week_number = models.PositiveIntegerField(blank=True, null=True) #сделать read_only в админке
 
     def __str__(self) -> str:
         return self.name
