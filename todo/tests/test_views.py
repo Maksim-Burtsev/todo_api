@@ -1,11 +1,16 @@
+import json
 from datetime import date
 
 from django.test import TestCase
 from django.urls import reverse
+
 from rest_framework import status
 
 from todo.models import Task, SubTask, User
-from todo.serializers import TaskSerializer
+from todo.serializers import (
+    TaskSerializer,
+    DoneTasksSerializer,
+)
 
 
 class TodoTestCase(TestCase):
@@ -138,3 +143,96 @@ class TodoTestCase(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class DoneTasksView(TestCase):
+
+    def setUp(self) -> None:
+        self.user = User.objects.create(
+            username='test_username',
+            password='124Rrfdedqrq12',
+            email='test@gmail.com',
+        )
+
+        for i in range(10):
+            Task.objects.create(
+                name=f'Test task{i}',
+                user=self.user,
+                date=date.today(),
+            )
+            Task.objects.create(
+                name=f'Done Test task{i}',
+                user=self.user,
+                date=date.today(),
+                is_done=True,
+            )
+            SubTask.objects.create(
+                name=f'test subtask {i}',
+                task_id=int((i+2)/2),
+            )
+
+        return super().setUp()
+
+    def test_auth_case(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('done_tasks'))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(json.dumps(response.data),
+                         '[{"id": 1, "all_tasks": 35, "done": 12}]')
+
+    def test_no_auth(self):
+
+        response = self.client.get(reverse('done_tasks'))
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class SubTaskTestCase(TestCase):
+    def setUp(self) -> None:
+        self.user = User.objects.create(
+            username='test_username',
+            password='124Rrfdedqrq12',
+            email='test@gmail.com',
+        )
+
+        self.user_2 = User.objects.create(
+            username='test_2_username',
+            password='12224Rrfdedqrq12',
+            email='test2@gmail.com',
+        )
+
+        Task.objects.create(
+            name=f'Done Test task',
+            user=self.user,
+            date=date.today(),
+            is_done=True,
+        )
+
+        for i in range(10):
+            subtask = SubTask.objects.create(
+                name=f'test subtask{i}',
+                task_id=1,
+            )
+
+        return super().setUp()
+
+    def test_no_auth(self):
+        response = self.client.get(reverse('subtask', args=(1,)))
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_no_owner(self):
+        self.client.force_login(self.user_2)
+
+        response = self.client.get(reverse('subtask', args=(1,)))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_owner(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('subtask', args=(1,)))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        print(response.data) #fix

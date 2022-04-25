@@ -29,7 +29,7 @@ urlpatterns = [
     path('check_code/', GetCodeView.as_view()),
     path('create_password/', CreateNewPasswordView.as_view()),
 
-    path('subtask/<int:pk>/', SubTaskDetailView.as_view()),
+    path('subtask/<int:pk>/', SubTaskDetailView.as_view(), name='subtask'),
     path('create_subtask/', CreateSubTaskView.as_view()),
-    path('done_tasks/', DoneTasksView.as_view()),
+    path('done_tasks/', DoneTasksView.as_view(),name='done_tasks')
 ]
