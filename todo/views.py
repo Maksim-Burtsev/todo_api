@@ -1,4 +1,3 @@
-from urllib import request
 from django.db.models import Count, Q, F
 
 from rest_framework import status
@@ -142,7 +141,7 @@ class RegisterUserView(APIView):
             username = serializer.data['username']
             password = serializer.data['password']
 
-            user = User.objects.create(
+            user = User.objects.create_user(
                 username=username,
                 email=email,
                 password=password
@@ -168,5 +167,5 @@ class UpdatePasswordView(APIView):
                 'detail': 'Password was changed!'
             })
 
-        return Response({'detail': 'Invalid data!'},
+        return Response(serializer.errors,
                         status=status.HTTP_400_BAD_REQUEST)

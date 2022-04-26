@@ -57,7 +57,7 @@ class CodeSerializer(serializers.Serializer, CodeMixin):
 
         reset_password_code = ResetPasswordCode.objects.filter(
             code=code, user_id=user.id)
-
+    
         if not reset_password_code.exists():
             raise serializers.ValidationError("Wrong code")
 
@@ -115,13 +115,13 @@ class PasswordsSerializer(serializers.Serializer):
     token = serializers.CharField()
     old_password = serializers.CharField()
     new_password = serializers.CharField()
-    comfirm_password = serializers.CharField()
+    confirm_password = serializers.CharField()
 
     def validate(self, data):
         token = data.get('token')
         old_password = data.get('old_password')
         new_password = data.get('new_password')
-        comfirm_password = data.get('comfirm_password')
+        confirm_password = data.get('confirm_password')
 
         db_token = Token.objects.filter(key=token)
 
@@ -135,7 +135,7 @@ class PasswordsSerializer(serializers.Serializer):
         if old_password == new_password:
             raise serializers.ValidationError('New password equal old!')
 
-        if new_password != comfirm_password:
+        if new_password != confirm_password:
             raise serializers.ValidationError("Passwords don't match")
 
         return super().validate(data)

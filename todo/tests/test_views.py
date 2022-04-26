@@ -1,27 +1,30 @@
+import os
 import json
 from datetime import date
-from pydoc import resolve
-from re import S
 
 from django.test import TestCase
 from django.urls import reverse
+from dotenv import load_dotenv
 
+from rest_framework.authtoken.models import Token
 from rest_framework import status
 
-from todo.models import Task, SubTask, User
+
+from todo.models import Task, SubTask, User, ResetPasswordCode
 from todo.serializers import (
     TaskSerializer,
 )
+from todo.services import _generate_code
 
 
 class TodoTestCase(TestCase):
 
     def setUp(self) -> None:
-        self.user = User.objects.create(
+        self.user = User.objects.create_user(
             username='test_user2',
             password='123ruFOJDvdspqw0id0f'
         )
-        self.user_2 = User.objects.create(
+        self.user_2 = User.objects.create_user(
             username='test_user_2_0',
             password='123ruFOJDvdspqw0id0f'
         )
@@ -149,7 +152,7 @@ class TodoTestCase(TestCase):
 class DoneTasksView(TestCase):
 
     def setUp(self) -> None:
-        self.user = User.objects.create(
+        self.user = User.objects.create_user(
             username='test_username',
             password='124Rrfdedqrq12',
             email='test@gmail.com',
@@ -190,13 +193,13 @@ class DoneTasksView(TestCase):
 
 class SubTaskTestCase(TestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create(
+        self.user = User.objects.create_user(
             username='test_username',
             password='124Rrfdedqrq12',
             email='test@gmail.com',
         )
 
-        self.user_2 = User.objects.create(
+        self.user_2 = User.objects.create_user(
             username='test_2_username',
             password='12224Rrfdedqrq12',
             email='test2@gmail.com',
@@ -255,13 +258,13 @@ class SubTaskTestCase(TestCase):
 class CreateSubtaskTestCase(TestCase):
 
     def setUp(self) -> None:
-        self.user = User.objects.create(
+        self.user = User.objects.create_user(
             username='FDwefewsa',
             password='124Rrfdede2dqrq12',
             email='d2r2sd@gmail.com',
         )
 
-        self.user_2 = User.objects.create(
+        self.user_2 = User.objects.create_user(
             username='FDEWSS2',
             password='124DSawqs',
             email='ASFS@gmail.com',
@@ -296,3 +299,113 @@ class CreateSubtaskTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
         self.assertEqual(SubTask.objects.all().count(), 1)
+
+
+class AuthenticationTestCase(TestCase):
+
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            username='admin',
+            password='admin',
+            email='admin@gmail.com',
+        )
+        return super().setUp()
+
+    def test_auth(self):
+        user = User.objects.create_user(
+            username="test",
+            password="test"
+        )
+        user.save()
+
+        response = self.client.post(
+            reverse('auth'), {"username": "test", "password": "test"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('token' in response.data)
+
+    def test_register(self):
+
+        response = self.client.post(reverse('register'), {
+            'username': 'test_register',
+            'password': '1244tfWDwa',
+            'email': 'test@gmail.com'
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertTrue(User.objects.filter(
+            username='test_register', email='test@gmail.com').exists())
+
+    def test_update_password(self):
+
+        Token.objects.create(user=self.user)
+
+        response = self.client.post(reverse('update_password'), {
+            'token': self.user.auth_token,
+            'old_password': 'admin',
+            'new_password': '123RWRWQRQ',
+            'confirm_password': '123RWRWQRQ',
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_send_code(self):
+        load_dotenv()
+        email = os.getenv('EMAIL')
+
+        User.objects.create_user(
+            username='test',
+            password='test',
+            email=email,
+        )
+
+        # response = self.client.post(reverse('send_code'), {'email':email})
+        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_wrong_email_send_code(self):
+
+        response = self.client.post(reverse('send_code'),
+                                    {'email': 'wrong_email@mail.ru'})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_check_code(self):
+
+        Token.objects.create(user=self.user)
+        code = '12345'
+
+        ResetPasswordCode.objects.create(
+            user=self.user,
+            code=code
+        )
+
+        response = self.client.post(reverse('check_code'), {
+            'email': 'admin@gmail.com',
+            'code': code
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {'Correct': 'True', 'user_id': 1})
+    
+    def test_create_password(self):
+        
+        token = Token.objects.create(user=self.user)
+        code = '54321'
+
+        ResetPasswordCode.objects.create(
+            user=self.user,
+            code=code
+        )
+
+        response = self.client.post(reverse('create_password'), {
+            'user_id':self.user.id,
+            'code':code,
+            'new_password':'21dFEQEWqwds2',
+            'confirm_password':'21dFEQEWqwds2'
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        user = User.objects.get(id=self.user.id)
+        self.assertTrue(user.check_password('21dFEQEWqwds2'))
