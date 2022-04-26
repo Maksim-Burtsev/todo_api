@@ -22,7 +22,7 @@ router.register('todo', TodoViewSet, basename='todo')
 urlpatterns = [
     path('', include(router.urls)),
 
-    path('api-token-auth/', views.obtain_auth_token),
+    path('api-token-auth/', views.obtain_auth_token, name='auth'),
     path('register/', RegisterUserView.as_view()),
     path('update_password/', UpdatePasswordView.as_view()),
     path('send_codе/', EmailView.as_view()),
@@ -30,6 +30,6 @@ urlpatterns = [
     path('create_password/', CreateNewPasswordView.as_view()),
 
     path('subtask/<int:pk>/', SubTaskDetailView.as_view(), name='subtask'),
-    path('create_subtask/', CreateSubTaskView.as_view()),
+    path('create_subtask/', CreateSubTaskView.as_view(), name='create_subtask'),
     path('done_tasks/', DoneTasksView.as_view(),name='done_tasks')
 ]

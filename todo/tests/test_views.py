@@ -1,5 +1,7 @@
 import json
 from datetime import date
+from pydoc import resolve
+from re import S
 
 from django.test import TestCase
 from django.urls import reverse
@@ -9,7 +11,6 @@ from rest_framework import status
 from todo.models import Task, SubTask, User
 from todo.serializers import (
     TaskSerializer,
-    DoneTasksSerializer,
 )
 
 
@@ -231,8 +232,67 @@ class SubTaskTestCase(TestCase):
     def test_owner(self):
         self.client.force_login(self.user)
 
-        response = self.client.get(reverse('subtask', args=(1,)))
+        response_1 = self.client.get(reverse('subtask', args=(1,)))
+        response_2 = self.client.get(reverse('subtask', args=(7,)))
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_1.status_code, status.HTTP_200_OK)
+        self.assertEqual(response_2.status_code, status.HTTP_200_OK)
 
-        print(response.data) #fix
+        self.assertEqual(response_1.data, {
+                         'id': 1, 'name': 'test subtask0', 'description': None, 'priority': None, 'is_done': False})
+
+        self.assertEqual(response_2.data, {
+                         'id': 7, 'name': 'test subtask6', 'description': None, 'priority': None, 'is_done': False})
+
+    def test_wrong_subtask(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('subtask', args=(8888,)))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class CreateSubtaskTestCase(TestCase):
+
+    def setUp(self) -> None:
+        self.user = User.objects.create(
+            username='FDwefewsa',
+            password='124Rrfdede2dqrq12',
+            email='d2r2sd@gmail.com',
+        )
+
+        self.user_2 = User.objects.create(
+            username='FDEWSS2',
+            password='124DSawqs',
+            email='ASFS@gmail.com',
+        )
+
+        Task.objects.create(
+            name=f'Test task',
+            user=self.user,
+            date=date.today(),
+        )
+
+        return super().setUp()
+
+    def test_not_task_owner(self):
+        self.client.force_login(self.user_2)
+
+        response = self.client.post(reverse('create_subtask'), {
+            "name": 'test subtask',
+            "task": 1
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_is_task_owner(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse('create_subtask'), {
+            "name": 'test subtask',
+            "task": 1
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        self.assertEqual(SubTask.objects.all().count(), 1)
