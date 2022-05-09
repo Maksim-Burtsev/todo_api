@@ -24,7 +24,8 @@ from todo.serializers import (
     DoneTasksSerializer
 )
 from todo.permissions import IsOwner, IsTaskOwner
-from todo.services import _is_task_owner, send_code_on_email, _generate_code
+from todo.services import _is_task_owner, _generate_code
+from todo.tasks import send_code_on_email
 
 
 class DoneTasksView(generics.ListAPIView):
@@ -120,7 +121,7 @@ class EmailView(APIView):
         if serializer.is_valid():
             email = serializer.data['email']
             code = _generate_code()
-            send_code_on_email(code, email)
+            send_code_on_email.delay(code, email)
             user = User.objects.get(email=email)
             reset_code, _ = ResetPasswordCode.objects.get_or_create(
                 user=user,
