@@ -11,10 +11,6 @@ from rest_framework import status
 
 
 from todo.models import Task, SubTask, User, ResetPasswordCode
-from todo.serializers import (
-    TaskSerializer,
-)
-from todo.services import _generate_code
 
 
 class TodoTestCase(TestCase):
@@ -43,12 +39,9 @@ class TodoTestCase(TestCase):
     def test_get(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse('todo-list'))
-        tasks = Task.objects.filter(user=self.user)
-        serializer_data = TaskSerializer(tasks, many=True).data
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-        self.assertEqual(response.data, serializer_data)
+        self.assertEqual(len(response.data), 10)
 
     def test_nologin_get(self):
         response = self.client.get(reverse('todo-list'))
@@ -387,9 +380,9 @@ class AuthenticationTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {'Correct': 'True', 'user_id': 1})
-    
+
     def test_create_password(self):
-        
+
         token = Token.objects.create(user=self.user)
         code = '54321'
 
@@ -399,10 +392,10 @@ class AuthenticationTestCase(TestCase):
         )
 
         response = self.client.post(reverse('create_password'), {
-            'user_id':self.user.id,
-            'code':code,
-            'new_password':'21dFEQEWqwds2',
-            'confirm_password':'21dFEQEWqwds2'
+            'user_id': self.user.id,
+            'code': code,
+            'new_password': '21dFEQEWqwds2',
+            'confirm_password': '21dFEQEWqwds2'
         })
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

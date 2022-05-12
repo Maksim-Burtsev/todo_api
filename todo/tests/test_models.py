@@ -41,7 +41,6 @@ class TodoTasksTest(TestCase):
             is_done=True,
             priority=1,
             date=date.today(),
-            overdue=True,
         )
 
         self.assertEqual(Task.objects.all().count(), 3)
@@ -51,9 +50,7 @@ class TodoTasksTest(TestCase):
 
         self.assertTrue(task_2.is_done)
         self.assertEqual(task_2.priority, 1)
-        self.assertFalse(task_2.overdue)
 
-        self.assertTrue(task_3.overdue)
 
     def test_subtasks(self):
         user = User.objects.get(pk=1)
