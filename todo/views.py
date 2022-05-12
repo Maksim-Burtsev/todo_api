@@ -1,4 +1,5 @@
-from django.db.models import Count, Q, F
+from django.utils import timezone
+from django.db.models import Count, Q, F, ExpressionWrapper, BooleanField
 
 from rest_framework import status
 from rest_framework import viewsets, generics
@@ -45,20 +46,25 @@ class DoneTasksView(generics.ListAPIView):
             all_tasks=Count('tasks')+Count('tasks__subtasks')
         )
 
-#TODO передалать на отдельные урлы
-#Task.objects.annotate(over_and_over=ExpressionWrapper(Q(date__lt=todaay), output_field=BooleanField()))
 
 class TodoViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [IsAuthenticated & IsOwner]
 
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filter_fields = ['is_done', 'priority', 'date', 'overdue', 'week_number']
+    filter_fields = ['is_done', 'priority', 'date', 'week_number']
     search_fields = ['name', 'description',
                      'subtasks__name', 'subtasks__description']
 
     def get_queryset(self):
-        return Task.objects.filter(user_id=self.request.user).prefetch_related('subtasks')
+        date_now = timezone.now().date()
+        return Task.objects.filter(
+            user_id=self.request.user
+        ).annotate(
+            overdue=ExpressionWrapper(
+                Q(date__lt=date_now),
+                output_field=BooleanField())
+        ).prefetch_related('subtasks')
 
 
 class SubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):

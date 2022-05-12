@@ -16,6 +16,7 @@ class DoneTasksSerializer(serializers.ModelSerializer):
         model = User
         fields = ('id', 'all_tasks', 'done')
 
+
 class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
     user_id = serializers.IntegerField()
     code = serializers.CharField()
@@ -55,11 +56,11 @@ class CodeSerializer(serializers.Serializer, CodeMixin):
         except User.DoesNotExist:
             raise serializers.ValidationError("Wrong email")
 
-        #TODO достаём код только через user'a
+        # TODO достаём код только через user'a
         reset_password_code = ResetPasswordCode.objects.filter(
             code=code, user_id=user.id)
-        #предварительно уменьшить количество попыток
-        #если код не совпадает, то 
+        # предварительно уменьшить количество попыток
+        # если код не совпадает, то
         if not reset_password_code.exists():
             raise serializers.ValidationError("Wrong code")
 
@@ -162,6 +163,7 @@ class TaskSerializer(serializers.ModelSerializer):
         default=serializers.CurrentUserDefault(),
     )
     week_number = serializers.IntegerField(read_only=True)
+    overdue = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Task

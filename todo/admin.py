@@ -12,6 +12,7 @@ class SubTaskInline(admin.TabularInline):
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ('name', 'date', 'user', 'is_done')
+    readonly_fields = ('week_number',)
     inlines = [SubTaskInline]
 
 @admin.register(ResetPasswordCode)

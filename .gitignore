@@ -3,7 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-plan.txt
+plan.md
 # C extensions
 venv
 *.so

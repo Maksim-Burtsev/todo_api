@@ -30,7 +30,6 @@ class ResetPasswordCode(models.Model):
 class Task(models.Model):
     """Задание"""
 
-    # TODO время выполнения
     PRIORITY_CHOICE = (
         (1, 'green'),
         (2, 'yellow'),
@@ -45,13 +44,11 @@ class Task(models.Model):
     priority = models.PositiveSmallIntegerField(blank=True,
                                                 null=True, choices=PRIORITY_CHOICE)
     date = models.DateField(validators=[validate_date])
-    overdue = models.BooleanField(blank=True, null=True, default=False)
-    week_number = models.PositiveIntegerField(blank=True, null=True) 
-    #TODO сделать read_only в админке
+    week_number = models.PositiveIntegerField(blank=True, null=True)
 
     def __str__(self) -> str:
         return self.name
-    
+
     def save(self, *args, **kwargs):
         self.week_number = self.date.isocalendar().week
         return super().save(*args, **kwargs)
