@@ -55,9 +55,11 @@ class CodeSerializer(serializers.Serializer, CodeMixin):
         except User.DoesNotExist:
             raise serializers.ValidationError("Wrong email")
 
+        #TODO достаём код только через user'a
         reset_password_code = ResetPasswordCode.objects.filter(
             code=code, user_id=user.id)
-    
+        #предварительно уменьшить количество попыток
+        #если код не совпадает, то 
         if not reset_password_code.exists():
             raise serializers.ValidationError("Wrong code")
 

@@ -1,19 +1,10 @@
 import datetime
-from datetime import date
 
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 
-
-def validate_code(value: str):
-    if len(value) != 5:
-        raise ValidationError('Length of code must be five')
-    if not value.isdigit():
-        raise ValidationError('Code must be digit')
-
-    return value
+from todo.validators import validate_code, validate_date
 
 
 class ResetPasswordCode(models.Model):
@@ -36,11 +27,6 @@ class ResetPasswordCode(models.Model):
         return super().save(*args, **kwargs)
 
 
-def validate_date(task_date):
-    if task_date < date.today():
-        raise ValidationError('Date can only be current or future!')
-
-
 class Task(models.Model):
     """Задание"""
 
@@ -60,7 +46,8 @@ class Task(models.Model):
                                                 null=True, choices=PRIORITY_CHOICE)
     date = models.DateField(validators=[validate_date])
     overdue = models.BooleanField(blank=True, null=True, default=False)
-    week_number = models.PositiveIntegerField(blank=True, null=True) #сделать read_only в админке
+    week_number = models.PositiveIntegerField(blank=True, null=True) 
+    #TODO сделать read_only в админке
 
     def __str__(self) -> str:
         return self.name

@@ -45,6 +45,8 @@ class DoneTasksView(generics.ListAPIView):
             all_tasks=Count('tasks')+Count('tasks__subtasks')
         )
 
+#TODO передалать на отдельные урлы
+#Task.objects.annotate(over_and_over=ExpressionWrapper(Q(date__lt=todaay), output_field=BooleanField()))
 
 class TodoViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
