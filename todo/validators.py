@@ -1,6 +1,14 @@
 from datetime import date
 
+
 from django.core.exceptions import ValidationError
+
+
+
+def validate_attempt(value: int):
+    if not 0 <= value <= 5:
+        raise ValidationError('Number of attempts must be between 0 and 5')
+    return value
 
 
 def validate_code(value: str):

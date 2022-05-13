@@ -1,3 +1,5 @@
+from cgitb import reset
+from django.db.models import F
 from django.utils import timezone
 
 from rest_framework import serializers
@@ -31,6 +33,14 @@ class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
         new_password = data.get('new_password')
         confirm_password = data.get('confirm_password')
 
+        reset_password_code = ResetPasswordCode.objects.filter(user_id=user_id)
+        if not reset_password_code.exists():
+            raise serializers.ValidationError("Wrong code")
+
+        reset_code_obj = reset_password_code[0]
+        if reset_code_obj.attempt == 0:
+            raise serializers.ValidationError("Attempts are over")
+
         if new_password != confirm_password:
             raise serializers.ValidationError("Passwords don't match")
 
@@ -55,16 +65,22 @@ class CodeSerializer(serializers.Serializer, CodeMixin):
         except User.DoesNotExist:
             raise serializers.ValidationError("Wrong email")
 
-        # TODO достаём код только через user'a
-        reset_password_code = ResetPasswordCode.objects.filter(
-            code=code, user_id=user.id)
-        # предварительно уменьшить количество попыток
-        # если код не совпадает, то
+        reset_password_code = ResetPasswordCode.objects.filter(user_id=user.id)
         if not reset_password_code.exists():
             raise serializers.ValidationError("Wrong code")
 
-        reset_code = reset_password_code[0]
-        if reset_code.lasts_until < timezone.now():
+        reset_code_obj = reset_password_code[0]
+        if reset_code_obj.attempt == 0:
+            raise serializers.ValidationError("Attempts are over")
+
+        reset_code_obj.attempt = F('attempt') - 1
+        reset_code_obj.save()
+
+        if reset_code_obj.code != code:
+            print(reset_code_obj.code)
+            raise serializers.ValidationError("Wrong code")
+
+        if reset_code_obj.lasts_until < timezone.now():
             raise serializers.ValidationError("Code is overdue")
 
         return super().validate(data)

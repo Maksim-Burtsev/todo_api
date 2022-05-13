@@ -30,6 +30,9 @@ from todo.tasks import send_code_on_email
 
 
 class DoneTasksView(generics.ListAPIView):
+    """
+    Возвращает количество всех/выполненных задач пользователя
+    """
     serializer_class = DoneTasksSerializer
     permission_classes = [IsAuthenticated]
 
@@ -68,13 +71,18 @@ class TodoViewSet(viewsets.ModelViewSet):
 
 
 class SubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Подзадача
+    """
     queryset = SubTask.objects.all()
     serializer_class = SubTaskSerializer
     permission_classes = [IsTaskOwner]
 
 
 class CreateSubTaskView(generics.CreateAPIView):
-
+    """
+    Создание подзадачи
+    """
     serializer_class = CreateSubTaskSerializer
     queryset = SubTask.objects.all()
     permission_classes = [IsTaskOwner]
@@ -88,6 +96,9 @@ class CreateSubTaskView(generics.CreateAPIView):
 
 
 class CreateNewPasswordView(APIView):
+    """
+    Создание нового пароля после восстановления
+    """
     def post(self, request):
         serializer = CreateNewPasswordSerializer(data=request.data)
         if serializer.is_valid():
@@ -110,6 +121,9 @@ class CreateNewPasswordView(APIView):
 
 
 class GetCodeView(APIView):
+    """
+    Проверка кода
+    """
     def post(self, request):
         serializer = CodeSerializer(data=request.data)
         if serializer.is_valid():
@@ -124,6 +138,9 @@ class GetCodeView(APIView):
 
 
 class EmailView(APIView):
+    """
+    Отправка кода восстановления на почту
+    """
     def post(self, request):
         serializer = EmailSerializer(data=request.data)
         if serializer.is_valid():
@@ -135,6 +152,7 @@ class EmailView(APIView):
                 user=user,
             )
             reset_code.code = code
+            reset_code.attempt = 5
             reset_code.save()
             return Response({
                 'detail': 'Code on your email!'
@@ -143,6 +161,9 @@ class EmailView(APIView):
 
 
 class RegisterUserView(APIView):
+    """
+    Регистрация
+    """
     def post(self, request):
         serializer = UserRegisterSerializer(data=request.data)
         if serializer.is_valid():
@@ -165,6 +186,9 @@ class RegisterUserView(APIView):
 
 
 class UpdatePasswordView(APIView):
+    """
+    Обновление пароля
+    """
     def post(self, request):
         serializer = PasswordsSerializer(data=request.data)
         if serializer.is_valid():

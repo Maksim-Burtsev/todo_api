@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 
-from todo.validators import validate_code, validate_date
+from todo.validators import validate_code, validate_date, validate_attempt
 
 
 class ResetPasswordCode(models.Model):
@@ -19,6 +19,9 @@ class ResetPasswordCode(models.Model):
     date_created = models.DateTimeField(blank=True, null=True)
 
     lasts_until = models.DateTimeField(blank=True, null=True)
+
+    attempt = models.SmallIntegerField(
+        blank=True, default=5, validators=[validate_attempt, ])
 
     def save(self, *args, **kwargs) -> None:
         self.date_created = timezone.now()
