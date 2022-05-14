@@ -1,4 +1,3 @@
-from cgitb import reset
 from django.db.models import F
 from django.utils import timezone
 
@@ -7,6 +6,7 @@ from rest_framework.authtoken.models import Token
 
 from todo.models import Task, SubTask, User, ResetPasswordCode
 from todo.mixins import CodeMixin
+from todo.validators import _validate_and_update_reset_code
 
 
 class DoneTasksSerializer(serializers.ModelSerializer):
@@ -33,13 +33,7 @@ class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
         new_password = data.get('new_password')
         confirm_password = data.get('confirm_password')
 
-        reset_password_code = ResetPasswordCode.objects.filter(user_id=user_id)
-        if not reset_password_code.exists():
-            raise serializers.ValidationError("Wrong code")
-
-        reset_code_obj = reset_password_code[0]
-        if reset_code_obj.attempt == 0:
-            raise serializers.ValidationError("Attempts are over")
+        _validate_and_update_reset_code(user_id=user_id, code=code)
 
         if new_password != confirm_password:
             raise serializers.ValidationError("Passwords don't match")
@@ -59,29 +53,18 @@ class CodeSerializer(serializers.Serializer, CodeMixin):
 
     def validate(self, data):
         email = data['email']
-        code = data['code']
+        user_code = data['code']
+
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             raise serializers.ValidationError("Wrong email")
 
-        reset_password_code = ResetPasswordCode.objects.filter(user_id=user.id)
-        if not reset_password_code.exists():
-            raise serializers.ValidationError("Wrong code")
-
-        reset_code_obj = reset_password_code[0]
-        if reset_code_obj.attempt == 0:
-            raise serializers.ValidationError("Attempts are over")
+        reset_code_obj = _validate_and_update_reset_code(
+            user_id=user.id, code=user_code)
 
         reset_code_obj.attempt = F('attempt') - 1
         reset_code_obj.save()
-
-        if reset_code_obj.code != code:
-            print(reset_code_obj.code)
-            raise serializers.ValidationError("Wrong code")
-
-        if reset_code_obj.lasts_until < timezone.now():
-            raise serializers.ValidationError("Code is overdue")
 
         return super().validate(data)
 

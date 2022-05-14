@@ -1,6 +1,8 @@
+from cgitb import reset
 import os
 import json
 from datetime import date
+from black import read_pyproject_toml
 
 from django.test import TestCase
 from django.urls import reverse
@@ -381,9 +383,30 @@ class AuthenticationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, {'Correct': 'True', 'user_id': 1})
 
+    def test_check_code_attempts(self):
+        Token.objects.create(user=self.user)
+        code = '12345'
+
+        reset_code_obj = ResetPasswordCode.objects.create(
+            user=self.user,
+            code=code
+        )
+
+        for _ in range(5):
+            response = self.client.post(reverse('check_code'), {
+                'email': 'admin@gmail.com',
+                'code': '54321'
+            })
+            self.assertEqual(response.status_code, 400)
+
+        reset_code_obj.refresh_from_db()
+
+        self.assertEqual(reset_code_obj.attempt, 0) 
+
+
     def test_create_password(self):
 
-        token = Token.objects.create(user=self.user)
+        Token.objects.create(user=self.user)
         code = '54321'
 
         ResetPasswordCode.objects.create(
@@ -402,3 +425,24 @@ class AuthenticationTestCase(TestCase):
 
         user = User.objects.get(id=self.user.id)
         self.assertTrue(user.check_password('21dFEQEWqwds2'))
+
+    def test_create_password_attempts(self):
+
+        Token.objects.create(user=self.user)
+        code = '54321'
+
+        reset_code = ResetPasswordCode.objects.create(
+            user=self.user,
+            code=code
+        )
+
+        response = self.client.post(reverse('create_password'), {
+            'user_id': self.user.id,
+            'code': '55555',
+            'new_password': '21dFEQEWqwds2',
+            'confirm_password': '21dFEQEWqwds2'
+        })
+        self.assertEqual(response.status_code, 400)
+
+        reset_code.refresh_from_db()
+        self.assertEqual(reset_code.attempt, 4)
