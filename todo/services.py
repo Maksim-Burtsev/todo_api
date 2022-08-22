@@ -3,7 +3,7 @@ import random
 from todo.models import Task
 
 
-def _is_task_owner(request):
+def _is_task_owner(request) -> bool:
     """Проверяет является ли создатель подзадачи владельцем задачи"""
     task_id = request.data.get('task')
     if task_id:

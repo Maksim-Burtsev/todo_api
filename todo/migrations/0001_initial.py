@@ -8,31 +8,69 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Task',
+            name="Task",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField(blank=True, null=True)),
-                ('is_done', models.BooleanField(default=False)),
-                ('priority', models.CharField(blank=True, choices=[(1, 'green'), (2, 'yellow'), (3, 'red')], max_length=255, null=True)),
-                ('date', models.DateField()),
-                ('overdue', models.BooleanField(blank=True, default=False, null=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField(blank=True, null=True)),
+                ("is_done", models.BooleanField(default=False)),
+                (
+                    "priority",
+                    models.CharField(
+                        blank=True,
+                        choices=[(1, "green"), (2, "yellow"), (3, "red")],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                ("date", models.DateField()),
+                ("overdue", models.BooleanField(blank=True, default=False, null=True)),
             ],
         ),
         migrations.CreateModel(
-            name='SubTask',
+            name="SubTask",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('description', models.TextField()),
-                ('priority', models.CharField(blank=True, choices=[(1, 'green'), (2, 'yellow'), (3, 'red')], max_length=255, null=True)),
-                ('is_done', models.BooleanField(default=False)),
-                ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subtasks', to='todo.task')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("description", models.TextField()),
+                (
+                    "priority",
+                    models.CharField(
+                        blank=True,
+                        choices=[(1, "green"), (2, "yellow"), (3, "red")],
+                        max_length=255,
+                        null=True,
+                    ),
+                ),
+                ("is_done", models.BooleanField(default=False)),
+                (
+                    "task",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="subtasks",
+                        to="todo.task",
+                    ),
+                ),
             ],
         ),
     ]

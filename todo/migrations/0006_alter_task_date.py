@@ -7,13 +7,13 @@ import todo.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('todo', '0005_alter_task_user'),
+        ("todo", "0005_alter_task_user"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='date',
+            model_name="task",
+            name="date",
             field=models.DateField(validators=[todo.models.validate_date]),
         ),
     ]

@@ -6,13 +6,15 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('todo', '0003_alter_subtask_description'),
+        ("todo", "0003_alter_subtask_description"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='priority',
-            field=models.PositiveSmallIntegerField(blank=True, choices=[(1, 'green'), (2, 'yellow'), (3, 'red')], null=True),
+            model_name="task",
+            name="priority",
+            field=models.PositiveSmallIntegerField(
+                blank=True, choices=[(1, "green"), (2, "yellow"), (3, "red")], null=True
+            ),
         ),
     ]

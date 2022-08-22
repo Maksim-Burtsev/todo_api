@@ -7,13 +7,15 @@ import todo.validators
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('todo', '0009_remove_task_overdue'),
+        ("todo", "0009_remove_task_overdue"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='resetpasswordcode',
-            name='attempt',
-            field=models.SmallIntegerField(blank=True, default=5, validators=[todo.validators.validate_attempt]),
+            model_name="resetpasswordcode",
+            name="attempt",
+            field=models.SmallIntegerField(
+                blank=True, default=5, validators=[todo.validators.validate_attempt]
+            ),
         ),
     ]

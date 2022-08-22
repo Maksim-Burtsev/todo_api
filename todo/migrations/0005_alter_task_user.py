@@ -9,13 +9,18 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('todo', '0004_alter_task_priority'),
+        ("todo", "0004_alter_task_priority"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='task',
-            name='user',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, related_name='tasks', to=settings.AUTH_USER_MODEL),
+            model_name="task",
+            name="user",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="tasks",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]

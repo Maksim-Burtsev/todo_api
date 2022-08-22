@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('todo', '0007_resetpasswordcode'),
+        ("todo", "0007_resetpasswordcode"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='task',
-            name='week_number',
+            model_name="task",
+            name="week_number",
             field=models.PositiveIntegerField(blank=True, null=True),
         ),
     ]

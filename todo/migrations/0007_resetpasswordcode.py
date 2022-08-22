@@ -10,18 +10,38 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('todo', '0006_alter_task_date'),
+        ("todo", "0006_alter_task_date"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ResetPasswordCode',
+            name="ResetPasswordCode",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('code', models.CharField(max_length=10, validators=[todo.models.validate_code])),
-                ('date_created', models.DateTimeField(blank=True, null=True)),
-                ('lasts_until', models.DateTimeField(blank=True, null=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='code', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "code",
+                    models.CharField(
+                        max_length=10, validators=[todo.models.validate_code]
+                    ),
+                ),
+                ("date_created", models.DateTimeField(blank=True, null=True)),
+                ("lasts_until", models.DateTimeField(blank=True, null=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="code",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]
