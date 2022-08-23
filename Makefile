@@ -1,13 +1,15 @@
 run:
-	python manage.py runserver
+	docker-compose up
 
 test:
-	python manage.py test
+	docker-compose run --rm web python manage.py test
 
 migrate:
-	python manage.py makemigrations && python manage.py migrate 
+	docker-compose run --rm web python manage.py migrate 
 	
 shell:
-	python manage.py shell
+	docker-compose run --rm web python manage.py shell
 
+req:
+	pip freeze > requirements.txt
  
