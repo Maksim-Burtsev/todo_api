@@ -14,7 +14,7 @@ class TodoTasksTest(TestCase):
         return super().setUp()
 
     def test_Task(self):
-        user = User.objects.get(pk=1)
+        user = User.objects.first()
 
         task_1 = Task.objects.create(
             name="Test task",
@@ -45,7 +45,7 @@ class TodoTasksTest(TestCase):
         self.assertEqual(task_2.priority, 1)
 
     def test_subtasks(self):
-        user = User.objects.get(pk=1)
+        user = User.objects.first()
 
         task_1 = Task.objects.create(
             name="Test task",
