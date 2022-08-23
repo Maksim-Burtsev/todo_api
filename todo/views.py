@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from django.db.models import Count, Q, F, ExpressionWrapper, BooleanField
 
 from rest_framework import status
@@ -113,13 +114,8 @@ class CreateNewPasswordView(APIView):
             code = serializer.data["code"]
             new_password = serializer.data["new_password"]
 
-            user = User.objects.get(id=user_id)
-            user.set_password(new_password)
-            user.save()
-
-            user_token = Token.objects.filter(user_id=user.id)
-            if user_token.exists():
-                user_token[0].delete()
+            self.update_password(user_id, new_password)
+            self.delete_token(user_id)
 
             ResetPasswordCode.objects.get(code=code, user_id=user_id).delete()
 
@@ -127,6 +123,24 @@ class CreateNewPasswordView(APIView):
                 {"detail": "Password created!"}, status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def update_password(user_id: int, new_password: str) -> None:
+        """
+        Обновляет пароль пользователя с указанным id
+        """
+        user = get_object_or_404(User, id=user_id)
+        user.set_password(new_password)
+        user.save()
+
+    @staticmethod
+    def delete_token(user_id: int) -> None:
+        """
+        Удаляет токен авторизации, если он существует
+        """
+        user_token = Token.objects.filter(user_id=user_id)
+        if user_token.exists():
+            user_token[0].delete()
 
 
 class GetCodeView(APIView):
@@ -138,10 +152,10 @@ class GetCodeView(APIView):
         serializer = CodeSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.data["email"]
-            user_id = User.objects.get(email=email).id
+            user = get_object_or_404(User, email=email)
 
             return Response(
-                {"Correct": "True", "user_id": user_id}, status=status.HTTP_200_OK
+                {"Correct": "True", "user_id": user.id}, status=status.HTTP_200_OK
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -157,17 +171,28 @@ class EmailView(APIView):
             email = serializer.data["email"]
             code = _generate_code()
             send_code_on_email.delay(code, email)
-            user = User.objects.get(email=email)
-            reset_code, _ = ResetPasswordCode.objects.get_or_create(
-                user=user,
-            )
-            reset_code.code = code
-            reset_code.attempt = 5
-            reset_code.save()
+
+            self.save_code_in_db(email, code)
             return Response(
                 {"detail": "Code on your email!"}, status=status.HTTP_200_OK
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @staticmethod
+    def save_code_in_db(email: str, code: int) -> None:
+        """
+        Сохраняет код восстановления пароля в базу.
+
+        *5 - количество попыток на введение правильного кода.
+
+        Если в базе есть предыдущий код восстановления для пользователя, то он **обновляется** и вместе с тем обновляются попытки.
+        """
+        user = get_object_or_404(User, email=email)
+        reset_code, created = ResetPasswordCode.objects.get_or_create(user=user)
+        reset_code.code = code
+        if not created:
+            reset_code.attempt = 5
+        reset_code.save()
 
 
 class RegisterUserView(APIView):
@@ -205,7 +230,9 @@ class UpdatePasswordView(APIView):
     def post(self, request):
         serializer = PasswordsSerializer(data=request.data)
         if serializer.is_valid():
-            user = User.objects.get(auth_token=serializer.validated_data["token"])
+            user = get_object_or_404(
+                User, auth_token=serializer.validated_data["token"]
+            )
             user.set_password(serializer.validated_data["new_password"])
             user.save()
             return Response({"detail": "Password was changed!"})

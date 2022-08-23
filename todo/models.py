@@ -28,7 +28,9 @@ class ResetPasswordCode(models.Model):
     attempt = models.SmallIntegerField(
         blank=True,
         default=5,
-        validators=[validate_attempt,],
+        validators=[
+            validate_attempt,
+        ],
     )
 
     def save(self, *args, **kwargs) -> None:

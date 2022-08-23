@@ -1,8 +1,9 @@
 from datetime import date
 
-from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.apps import apps
 from django.db.models import F
+from django.utils import timezone
+from django.core.exceptions import ValidationError
 
 from rest_framework import serializers
 
@@ -11,7 +12,8 @@ def _validate_and_update_reset_code(user_id, code):
     """
     Валидирует код восстановления и уменьшает количество попыток
     """
-    from todo.models import ResetPasswordCode
+
+    ResetPasswordCode = apps.get_model("todo", "ResetPasswordCode")
 
     reset_password_code = ResetPasswordCode.objects.filter(user_id=user_id)
     if not reset_password_code.exists():
