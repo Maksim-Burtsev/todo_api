@@ -1,6 +1,46 @@
 import random
 
-from todo.models import Task
+from django.utils import timezone
+from django.db.models import F
+
+from rest_framework import serializers
+from rest_framework.exceptions import APIException
+from rest_framework import status
+
+
+from todo.models import Task, ResetPasswordCode
+
+def validate_and_decrement_reset_code(user_id: int, user_code):
+    """"""
+    correct_code = _get_correct_user_code(user_id)
+    _decrement_code_attempts(correct_code, user_code)
+
+def _get_correct_user_code(user_id: int):
+    """"""
+    reset_password_code = ResetPasswordCode.objects.filter(user_id=user_id)
+    if not reset_password_code.exists():
+        raise serializers.ValidationError("Password wasn't reset")
+
+    correct_code = reset_password_code[0]
+
+    return correct_code
+
+
+def _decrement_code_attempts(correct_code, user_code: int) -> None:
+    """"""
+    if correct_code.attempt == 0:
+        raise APIException(
+            detail="Attempts are over", status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
+
+    correct_code.attempt = F("attempt") - 1
+    correct_code.save()
+
+    if correct_code.code != user_code:
+        raise serializers.ValidationError("Wrong code")
+
+    if correct_code.lasts_until < timezone.now():
+        raise serializers.ValidationError("Code is overdue")
 
 
 def _is_task_owner(request) -> bool:

@@ -4,7 +4,7 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 
-from todo.validators import validate_code, validate_date, validate_attempt
+from todo.models_validators import validate_code, validate_date, validate_attempt
 
 
 class ResetPasswordCode(models.Model):

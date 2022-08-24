@@ -1,12 +1,11 @@
-from django.db.models import F
 from django.shortcuts import get_object_or_404
 
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 
-from todo.models import Task, SubTask, User, ResetPasswordCode
 from todo.mixins import CodeMixin
-from todo.validators import _validate_and_update_reset_code
+from todo.services import validate_and_decrement_reset_code
+from todo.models import Task, SubTask, User, ResetPasswordCode
 
 
 class DoneTasksSerializer(serializers.ModelSerializer):
@@ -33,7 +32,7 @@ class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
         new_password = data.get("new_password")
         confirm_password = data.get("confirm_password")
 
-        _validate_and_update_reset_code(user_id=user_id, code=code)
+        validate_and_decrement_reset_code(user_id=user_id, user_code=code)
 
         if new_password != confirm_password:
             raise serializers.ValidationError("Passwords don't match")
@@ -60,12 +59,7 @@ class CodeSerializer(serializers.Serializer, CodeMixin):
 
         user = get_object_or_404(User, email=email)
 
-        reset_code_obj = _validate_and_update_reset_code(
-            user_id=user.id, code=user_code
-        )
-
-        reset_code_obj.attempt = F("attempt") - 1
-        reset_code_obj.save()
+        validate_and_decrement_reset_code(user_id=user.id, user_code=user_code)
 
         return super().validate(data)
 
