@@ -13,6 +13,7 @@ from rest_framework import status
 from todo.models import Task, SubTask, User, ResetPasswordCode
 
 # TODO tests of update
+# TODO test for 429 (try to send wrong code when attempts == 0)
 
 
 class TodoTestCase(TestCase):
@@ -371,6 +372,19 @@ class AuthenticationTestCase(TestCase):
 
         reset_code_obj.refresh_from_db()
         self.assertEqual(reset_code_obj.attempt, 0)
+
+    def test_use_all_code_attempts_429(self):
+        Token.objects.create(user=self.user)
+        reset_code = ResetPasswordCode.objects.create(user=self.user, code="77777")
+        self.assertEqual(reset_code.attempt, 5)
+
+        for _ in range(6):
+            response = self.client.post(
+                reverse("check_code"), {"email": "admin@gmail.com", "code": "11111"}
+            )
+
+        self.assertEqual(response.status_code, 429)
+        self.assertEqual(response.json(), {"detail": "Attempts are over"})
 
     def test_create_password(self):
 

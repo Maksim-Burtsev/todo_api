@@ -10,6 +10,12 @@ from rest_framework import status
 
 from todo.models import Task, ResetPasswordCode
 
+class CodeAttemptsLimitIsOver(APIException):
+    """
+    Количетсво попыток на правильное введение кода восстановления закончилось
+    """
+    status_code = 429
+
 
 def validate_and_decrement_reset_code(
     user_id: int, user_code: ResetPasswordCode
@@ -40,9 +46,7 @@ def _decrement_code_attempts(correct_code: ResetPasswordCode, user_code: int) ->
     Если код неправильный/попытки исчерпаны/код просрочен, то выбрасывается ошибка.
     """
     if correct_code.attempt == 0:
-        raise APIException(
-            detail="Attempts are over", status=status.HTTP_429_TOO_MANY_REQUESTS
-        )
+        raise CodeAttemptsLimitIsOver("Attempts are over")
 
     correct_code.attempt = F("attempt") - 1
     correct_code.save()
