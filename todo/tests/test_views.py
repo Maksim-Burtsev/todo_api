@@ -12,6 +12,8 @@ from rest_framework import status
 
 from todo.models import Task, SubTask, User, ResetPasswordCode
 
+# TODO tests of update
+
 
 class TodoTestCase(TestCase):
     def setUp(self) -> None:
@@ -22,14 +24,14 @@ class TodoTestCase(TestCase):
             username="test_user_2_0", password="123ruFOJDvdspqw0id0f"
         )
         for i in range(10):
-            Task.objects.create(
+            task = Task.objects.create(
                 name=f"Test task{i}",
                 user=self.user,
                 date=date.today(),
             )
             SubTask.objects.create(
                 name=f"test subtask {i}",
-                task_id=int((i + 2) / 2),
+                task=task,
             )
         return super().setUp()
 
@@ -41,30 +43,29 @@ class TodoTestCase(TestCase):
         self.assertEqual(len(response.data), 10)
 
     def test_nologin_get(self):
-        response = self.client.get(reverse("todo-list"))
-
+        response = self.client.get("/todo/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_post(self):
         self.client.force_login(self.user)
         response = self.client.post(
             reverse("todo-list"),
-            {"name": "Test task111", "user_id": 1, "date": date.today()},
+            {"name": "Test task111", "user_id": self.user.id, "date": date.today()},
         )
 
         last_task = Task.objects.all().last()
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(last_task.name, "Test task111")
-        self.assertEqual(last_task.user.id, 1)
+        self.assertEqual(last_task.user.id, self.user.id)
 
     def test_update(self):
         self.client.force_login(self.user)
-        self.task = Task.objects.get(pk=1)
+        self.task = Task.objects.first()
 
         url = reverse("todo-detail", args=(self.task.id,))
         test_date = date.today()
-        data = {"id": 1, "name": "Updated name", "date": test_date}
+        data = {"id": self.task.id, "name": "Updated name", "date": test_date}
 
         response = self.client.put(url, data, content_type="application/json")
         self.task.refresh_from_db()
@@ -75,7 +76,7 @@ class TodoTestCase(TestCase):
 
     def test_delete(self):
         self.client.force_login(self.user)
-        self.task = Task.objects.get(pk=1)
+        self.task = Task.objects.first()
 
         tasks_count = Task.objects.all().count()
         url = reverse("todo-detail", args=(self.task.id,))
@@ -86,7 +87,7 @@ class TodoTestCase(TestCase):
 
     def test_delete_not_owner(self):
 
-        self.task = Task.objects.get(pk=3)
+        self.task = Task.objects.first()
 
         self.client.force_login(self.user_2)
 
@@ -98,11 +99,11 @@ class TodoTestCase(TestCase):
 
     def test_update_not_owner(self):
         self.client.force_login(self.user_2)
-        self.task = Task.objects.get(pk=1)
+        self.task = Task.objects.first()
 
         url = reverse("todo-detail", args=(self.task.id,))
         test_date = date.today()
-        data = {"id": 1, "name": "Updated name", "date": test_date}
+        data = {"id": self.task.id, "name": "Updated name", "date": test_date}
 
         response = self.client.put(url, data, content_type="application/json")
 
@@ -110,7 +111,7 @@ class TodoTestCase(TestCase):
 
     def test_get_detail(self):
         self.client.force_login(self.user)
-        self.task = Task.objects.get(pk=1)
+        self.task = Task.objects.first()
 
         url = reverse("todo-detail", args=(self.task.id,))
 
@@ -121,7 +122,7 @@ class TodoTestCase(TestCase):
 
     def test_get_detail_not_owner(self):
         self.client.force_login(self.user_2)
-        self.task = Task.objects.get(pk=1)
+        self.task = Task.objects.first()
 
         url = reverse("todo-detail", args=(self.task.id,))
 
@@ -139,7 +140,7 @@ class DoneTasksView(TestCase):
         )
 
         for i in range(10):
-            Task.objects.create(
+            task = Task.objects.create(
                 name=f"Test task{i}",
                 user=self.user,
                 date=date.today(),
@@ -152,7 +153,7 @@ class DoneTasksView(TestCase):
             )
             SubTask.objects.create(
                 name=f"test subtask {i}",
-                task_id=int((i + 2) / 2),
+                task=task,
             )
 
         return super().setUp()
@@ -162,9 +163,7 @@ class DoneTasksView(TestCase):
         response = self.client.get(reverse("done_tasks"))
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            json.dumps(response.data), '[{"id": 1, "all_tasks": 35, "done": 12}]'
-        )
+        self.assertEqual(json.dumps(response.data), '[{"all_tasks": 30, "done": 10}]')
 
     def test_no_auth(self):
 
@@ -186,7 +185,7 @@ class SubTaskTestCase(TestCase):
             email="test2@gmail.com",
         )
 
-        Task.objects.create(
+        task = Task.objects.create(
             name=f"Done Test task",
             user=self.user,
             date=date.today(),
@@ -196,59 +195,35 @@ class SubTaskTestCase(TestCase):
         for i in range(10):
             subtask = SubTask.objects.create(
                 name=f"test subtask{i}",
-                task_id=1,
+                task=task,
             )
-
+        self.subtask = subtask
         return super().setUp()
 
     def test_no_auth(self):
-        response = self.client.get(reverse("subtask", args=(1,)))
+        response = self.client.get(reverse("subtask", args=(self.subtask.id,)))
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_no_owner(self):
         self.client.force_login(self.user_2)
 
-        response = self.client.get(reverse("subtask", args=(1,)))
+        response = self.client.get(reverse("subtask", args=(self.subtask.id,)))
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_owner(self):
         self.client.force_login(self.user)
 
-        response_1 = self.client.get(reverse("subtask", args=(1,)))
-        response_2 = self.client.get(reverse("subtask", args=(7,)))
+        response = self.client.get(reverse("subtask", args=(self.subtask.id,)))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(response_1.status_code, status.HTTP_200_OK)
-        self.assertEqual(response_2.status_code, status.HTTP_200_OK)
-
-        self.assertEqual(
-            response_1.data,
-            {
-                "id": 1,
-                "name": "test subtask0",
-                "description": None,
-                "priority": None,
-                "is_done": False,
-            },
-        )
-
-        self.assertEqual(
-            response_2.data,
-            {
-                "id": 7,
-                "name": "test subtask6",
-                "description": None,
-                "priority": None,
-                "is_done": False,
-            },
-        )
+        self.assertEqual(response.data["name"], "test subtask9")
 
     def test_wrong_subtask(self):
         self.client.force_login(self.user)
 
         response = self.client.get(reverse("subtask", args=(8888,)))
-
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
@@ -266,7 +241,7 @@ class CreateSubtaskTestCase(TestCase):
             email="ASFS@gmail.com",
         )
 
-        Task.objects.create(
+        self.task = Task.objects.create(
             name=f"Test task",
             user=self.user,
             date=date.today(),
@@ -278,20 +253,17 @@ class CreateSubtaskTestCase(TestCase):
         self.client.force_login(self.user_2)
 
         response = self.client.post(
-            reverse("create_subtask"), {"name": "test subtask", "task": 1}
+            reverse("create_subtask"), {"name": "test subtask", "task": self.task.id}
         )
-
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_is_task_owner(self):
         self.client.force_login(self.user)
 
         response = self.client.post(
-            reverse("create_subtask"), {"name": "test subtask", "task": 1}
+            reverse("create_subtask"), {"name": "test subtask", "task": self.task.id}
         )
-
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-
         self.assertEqual(SubTask.objects.all().count(), 1)
 
 
@@ -360,14 +332,12 @@ class AuthenticationTestCase(TestCase):
             email=email,
         )
 
-        # response = self.client.post(reverse('send_code'), {'email':email})
-        # self.assertEqual(response.status_code, status.HTTP_200_OK)
+        response = self.client.post(reverse("send_code"), {"email": email})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_wrong_email_send_code(self):
 
-        response = self.client.post(
-            reverse("send_code"), {"email": "wrong_email@mail.ru"}
-        )
+        response = self.client.post(reverse("send_code"), {"email": "@wrong.email@"})
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -383,14 +353,16 @@ class AuthenticationTestCase(TestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, {"Correct": "True", "user_id": 1})
+        self.assertEqual(response.data, {"Correct": "True", "user_id": self.user.id})
 
     def test_check_code_attempts(self):
         Token.objects.create(user=self.user)
         code = "12345"
 
         reset_code_obj = ResetPasswordCode.objects.create(user=self.user, code=code)
+        self.assertEqual(reset_code_obj.attempt, 5)
 
+        # make 5 attempts with wrong code and after assert code attempts == 0
         for _ in range(5):
             response = self.client.post(
                 reverse("check_code"), {"email": "admin@gmail.com", "code": "54321"}
@@ -398,7 +370,6 @@ class AuthenticationTestCase(TestCase):
             self.assertEqual(response.status_code, 400)
 
         reset_code_obj.refresh_from_db()
-
         self.assertEqual(reset_code_obj.attempt, 0)
 
     def test_create_password(self):
@@ -430,11 +401,13 @@ class AuthenticationTestCase(TestCase):
 
         reset_code = ResetPasswordCode.objects.create(user=self.user, code=code)
 
+        wrong_code = "55555"
+        # make try to create new pass with wrong and check that number of attempts decrement
         response = self.client.post(
             reverse("create_password"),
             {
                 "user_id": self.user.id,
-                "code": "55555",
+                "code": wrong_code,
                 "new_password": "21dFEQEWqwds2",
                 "confirm_password": "21dFEQEWqwds2",
             },
