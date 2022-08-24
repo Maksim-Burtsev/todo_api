@@ -15,7 +15,7 @@ class DoneTasksSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("id", "all_tasks", "done")
+        fields = ("all_tasks", "done")
 
 
 class CreateNewPasswordSerializer(serializers.Serializer, CodeMixin):
