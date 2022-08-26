@@ -12,9 +12,6 @@ from rest_framework import status
 
 from todo.models import Task, SubTask, User, ResetPasswordCode
 
-# TODO tests of update
-# TODO test for 429 (try to send wrong code when attempts == 0)
-
 
 class TodoTestCase(TestCase):
     def setUp(self) -> None:
@@ -74,6 +71,46 @@ class TodoTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(self.task.name, "Updated name")
         self.assertEqual(self.task.date, test_date)
+
+    def test_update_task_with_subtasks(self):
+        # if task is_done=True -> all subtasks is_done=True
+        self.client.force_login(self.user)
+        self.task = Task.objects.first()
+        self.assertEqual(self.task.subtasks.filter(is_done=False).count(), 1)
+
+        data = {
+            "id": self.task.id,
+            "name": "Updated task with subtask",
+            "date": date.today(),
+            "is_done": True,
+        }
+
+        url = reverse("todo-detail", args=(self.task.id,))
+        response = self.client.put(url, data, content_type="application/json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.subtasks.filter(is_done=False).count(), 0)
+
+    def test_update_task_with_subtasks_patch(self):
+        self.client.force_login(self.user)
+        self.task = Task.objects.first()
+        self.assertEqual(self.task.subtasks.filter(is_done=True).count(), 0)
+
+        data = {
+            "id": self.task.id,
+            "name": "Updated task and his subtask with PATCH",
+            "is_done": True,
+        }
+
+        url = reverse("todo-detail", args=(self.task.id,))
+        response = self.client.patch(url, data, content_type="application/json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.subtasks.filter(is_done=True).count(), 1)
 
     def test_delete(self):
         self.client.force_login(self.user)

@@ -76,6 +76,13 @@ class TodoViewSet(viewsets.ModelViewSet):
             .prefetch_related("subtasks")
         )
 
+    def perform_update(self, serializer):
+        # если задача становится выполненной, то все подзадачи выполняются автоматически
+        if "is_done" in serializer.validated_data:
+            if serializer.validated_data["is_done"] and not serializer.instance.is_done:
+                serializer.instance.subtasks.update(is_done=True)
+        return super().perform_update(serializer)
+
 
 class SubTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
