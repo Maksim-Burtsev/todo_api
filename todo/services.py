@@ -5,15 +5,16 @@ from django.db.models import F
 
 from rest_framework import serializers
 from rest_framework.exceptions import APIException
-from rest_framework import status
 
 
 from todo.models import Task, ResetPasswordCode
+
 
 class CodeAttemptsLimitIsOver(APIException):
     """
     Количетсво попыток на правильное введение кода восстановления закончилось
     """
+
     status_code = 429
 
 
@@ -23,11 +24,11 @@ def validate_and_decrement_reset_code(
     """
     Проверяет введённый пользователем код и уменьшает количество попыток на его правильное введение.
     """
-    correct_code = _get_correct_user_code(user_id)
-    _decrement_code_attempts(correct_code, user_code)
+    correct_code = get_correct_user_code(user_id)
+    decrement_code_attempts(correct_code, user_code)
 
 
-def _get_correct_user_code(user_id: int) -> ResetPasswordCode:
+def get_correct_user_code(user_id: int) -> ResetPasswordCode:
     """
     Достаёт из базы правильный (ожидаемый) код восстановления от пользователя
     """
@@ -40,7 +41,7 @@ def _get_correct_user_code(user_id: int) -> ResetPasswordCode:
     return correct_code
 
 
-def _decrement_code_attempts(correct_code: ResetPasswordCode, user_code: int) -> None:
+def decrement_code_attempts(correct_code: ResetPasswordCode, user_code: int) -> None:
     """
     Уменьшает количество попыток (-1) на отправку кода восстановления пароля.
     Если код неправильный/попытки исчерпаны/код просрочен, то выбрасывается ошибка.
@@ -58,7 +59,7 @@ def _decrement_code_attempts(correct_code: ResetPasswordCode, user_code: int) ->
         raise serializers.ValidationError("Code is overdue")
 
 
-def _is_task_owner(request) -> bool:
+def is_task_owner(request) -> bool:
     """Проверяет является ли создатель подзадачи владельцем задачи"""
     task_id = request.data.get("task")
     if task_id:
@@ -68,7 +69,7 @@ def _is_task_owner(request) -> bool:
     return True
 
 
-def _generate_code() -> int:
+def generate_code() -> int:
     """
     Генерирует 5-ти значный код для восстановления пароля
     """

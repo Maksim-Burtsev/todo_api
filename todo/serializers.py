@@ -120,12 +120,7 @@ class PasswordsSerializer(serializers.Serializer):
         new_password = data.get("new_password")
         confirm_password = data.get("confirm_password")
 
-        db_token = Token.objects.filter(key=token)
-
-        if not db_token.exists():
-            raise serializers.ValidationError("Invalid token")
-
-        user = User.objects.get(id=db_token[0].user_id)
+        user = self.get_user(token)
 
         self.validate_passwords(user, old_password, new_password, confirm_password)
 
@@ -144,6 +139,17 @@ class PasswordsSerializer(serializers.Serializer):
 
         if new_password != confirm_password:
             raise serializers.ValidationError("Passwords don't match")
+
+    @staticmethod
+    def get_user(token: str) -> User:
+        db_token = Token.objects.filter(key=token)
+
+        if not db_token.exists():
+            raise serializers.ValidationError("Invalid token")
+
+        user = User.objects.get(id=db_token[0].user_id)
+
+        return user
 
 
 class SubTaskSerializer(serializers.ModelSerializer):

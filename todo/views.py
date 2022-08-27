@@ -26,7 +26,7 @@ from todo.serializers import (
     DoneTasksSerializer,
 )
 from todo.permissions import IsOwner, IsTaskOwner
-from todo.services import _is_task_owner, _generate_code
+from todo.services import is_task_owner, generate_code
 from todo.tasks import send_code_on_email
 
 
@@ -103,7 +103,7 @@ class CreateSubTaskView(generics.CreateAPIView):
     queryset = SubTask.objects.all()
 
     def post(self, request, *args, **kwargs):
-        if not _is_task_owner(request):
+        if not is_task_owner(request):
             raise PermissionDenied({"detail": "You don't have permission to access"})
 
         return super().post(request, *args, **kwargs)
@@ -176,7 +176,7 @@ class EmailView(APIView):
         serializer = EmailSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.data["email"]
-            code = _generate_code()
+            code = generate_code()
             send_code_on_email.delay(code, email)
 
             self.save_code_in_db(email, code)

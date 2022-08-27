@@ -9,6 +9,8 @@ class IsOwner(permissions.BasePermission):
 
 
 class IsTaskOwner(permissions.BasePermission):
+    """Является ли пользователем задачи к которой он хочет добавить подзадачу"""
+
     message = "Not a task owner"
 
     def has_object_permission(self, request, _, obj):
